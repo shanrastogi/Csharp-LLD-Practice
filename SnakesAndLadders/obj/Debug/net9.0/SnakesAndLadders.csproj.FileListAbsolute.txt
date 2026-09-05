@@ -1,0 +1,14 @@
+C:\My files\VSC\C#\SnakesAndLadders\bin\Debug\net9.0\SnakesAndLadders.exe
+C:\My files\VSC\C#\SnakesAndLadders\bin\Debug\net9.0\SnakesAndLadders.deps.json
+C:\My files\VSC\C#\SnakesAndLadders\bin\Debug\net9.0\SnakesAndLadders.runtimeconfig.json
+C:\My files\VSC\C#\SnakesAndLadders\bin\Debug\net9.0\SnakesAndLadders.dll
+C:\My files\VSC\C#\SnakesAndLadders\bin\Debug\net9.0\SnakesAndLadders.pdb
+C:\My files\VSC\C#\SnakesAndLadders\obj\Debug\net9.0\SnakesAndLadders.GeneratedMSBuildEditorConfig.editorconfig
+C:\My files\VSC\C#\SnakesAndLadders\obj\Debug\net9.0\SnakesAndLadders.AssemblyInfoInputs.cache
+C:\My files\VSC\C#\SnakesAndLadders\obj\Debug\net9.0\SnakesAndLadders.AssemblyInfo.cs
+C:\My files\VSC\C#\SnakesAndLadders\obj\Debug\net9.0\SnakesAndLadders.csproj.CoreCompileInputs.cache
+C:\My files\VSC\C#\SnakesAndLadders\obj\Debug\net9.0\SnakesAndLadders.dll
+C:\My files\VSC\C#\SnakesAndLadders\obj\Debug\net9.0\refint\SnakesAndLadders.dll
+C:\My files\VSC\C#\SnakesAndLadders\obj\Debug\net9.0\SnakesAndLadders.pdb
+C:\My files\VSC\C#\SnakesAndLadders\obj\Debug\net9.0\SnakesAndLadders.genruntimeconfig.cache
+C:\My files\VSC\C#\SnakesAndLadders\obj\Debug\net9.0\ref\SnakesAndLadders.dll
