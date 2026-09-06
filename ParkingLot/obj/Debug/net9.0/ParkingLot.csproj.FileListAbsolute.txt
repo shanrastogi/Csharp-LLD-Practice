@@ -1,0 +1,15 @@
+C:\My files\VSC\C#\ParkingLot\obj\Debug\net9.0\ParkingLot.GeneratedMSBuildEditorConfig.editorconfig
+C:\My files\VSC\C#\ParkingLot\obj\Debug\net9.0\ParkingLot.AssemblyInfoInputs.cache
+C:\My files\VSC\C#\ParkingLot\obj\Debug\net9.0\ParkingLot.AssemblyInfo.cs
+C:\My files\VSC\C#\ParkingLot\obj\Debug\net9.0\ParkingLot.csproj.CoreCompileInputs.cache
+C:\My files\VSC\C#\ParkingLot\obj\Debug\net9.0\ParkingLot.sourcelink.json
+C:\My files\VSC\C#\ParkingLot\bin\Debug\net9.0\ParkingLot.exe
+C:\My files\VSC\C#\ParkingLot\bin\Debug\net9.0\ParkingLot.deps.json
+C:\My files\VSC\C#\ParkingLot\bin\Debug\net9.0\ParkingLot.runtimeconfig.json
+C:\My files\VSC\C#\ParkingLot\bin\Debug\net9.0\ParkingLot.dll
+C:\My files\VSC\C#\ParkingLot\bin\Debug\net9.0\ParkingLot.pdb
+C:\My files\VSC\C#\ParkingLot\obj\Debug\net9.0\ParkingLot.dll
+C:\My files\VSC\C#\ParkingLot\obj\Debug\net9.0\refint\ParkingLot.dll
+C:\My files\VSC\C#\ParkingLot\obj\Debug\net9.0\ParkingLot.pdb
+C:\My files\VSC\C#\ParkingLot\obj\Debug\net9.0\ParkingLot.genruntimeconfig.cache
+C:\My files\VSC\C#\ParkingLot\obj\Debug\net9.0\ref\ParkingLot.dll
