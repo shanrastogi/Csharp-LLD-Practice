@@ -26,17 +26,17 @@ namespace Logger.service
             handlerChain.Handle(logMessage);
         }
 
-        public void Info(String msg)
+        public void Info(string msg)
         {
             Log(LogLevel.INFO, msg);
         }
 
-        public void Warn(String msg)
+        public void Warn(string msg)
         {
             Log(LogLevel.WARN, msg);
         }
 
-        public void Error(String msg)
+        public void Error(string msg)
         {
             Log(LogLevel.ERROR, msg);
         }
