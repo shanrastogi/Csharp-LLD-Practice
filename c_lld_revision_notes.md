@@ -55,7 +55,7 @@ classDiagram
     Booking "*" -- "1" Vehicle
     Booking --> IPricingStrategy
     Booking --> IPaymentStrategy
-``` 
+```
 
 ## 2. Movie Ticket Booking System
 
@@ -100,7 +100,7 @@ classDiagram
     Seat <|-- ReclinerSeat
     Booking "1" -- "*" Seat
     LockProvider <|.. InMemoryLockProvider
-``` 
+```
 
 ## 3. Parking Lot
 
@@ -148,7 +148,7 @@ classDiagram
     Vehicle <|-- Bike
     Vehicle <|-- Truck
     Ticket "1" --> "1" ParkingSpot
-``` 
+```
 
 ## 4. Rate Limiter
 
@@ -190,7 +190,7 @@ classDiagram
     RateLimiter <|-- SlidingWindowLogRateLimiter
     RateLimiterService --> RateLimiter
     RateLimiterFactory --> RateLimiter
-``` 
+```
 
 ## 5. Logger Framework
 
@@ -231,7 +231,7 @@ classDiagram
     ILogAppender <|.. ConsoleAppender
     ILogAppender <|.. FileAppender
     LoggerService --> LogHandler
-``` 
+```
 
 ## 6. Snakes and Ladders
 
@@ -265,7 +265,7 @@ classDiagram
     Obstacle <|-- Snake
     Obstacle <|-- Ladder
     ObstacleFactory --> Obstacle
-``` 
+```
 
 ## 7. LFU Cache
 
@@ -280,6 +280,7 @@ This folder implements a Least Frequently Used cache, one of the most common dat
   - Correct handling of update and insertion cases while preserving $O(1)$ average complexity.
 
 **Key idea:**
+
 - Use a dictionary for `key -> node` lookup.
 - Use a frequency map for `freq -> doubly linked list` buckets.
 - Keep `minFreq` to know which bucket to evict from when the cache is full.
@@ -333,7 +334,7 @@ classDiagram
     CashDispenser <|.. OneHundredDispenser
     ATMMachine --> ATMModel
     Card --> Account
-``` 
+```
 
 ## 9. Splitwise Expense Sharing System
 
@@ -351,6 +352,7 @@ This is the most relevant “shared expenses” problem in the repo. It revolves
   - Simplifying many payments into a minimal set of transfers.
 
 **Behavioral flow:**
+
 - `Group` stores members and their balance sheets.
 - `ExpenseService` computes splits based on selected strategy.
 - `BalanceSheetService` updates payer and participant balances.
@@ -407,7 +409,7 @@ classDiagram
     GroupService --> ExpenseService
     ExpenseService --> BalanceSheetService
     GroupService --> DebtSimplificationService
-``` 
+```
 
 ## 10. Common LLD interview checklist
 
