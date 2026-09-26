@@ -10,8 +10,9 @@
 ## How to use this document
 
 For each system, read in this order:
+
 1. **Problem framing** — what real-world workflow are we modeling?
-2. **Core entities** — the nouns, and *why* they exist as separate classes.
+2. **Core entities** — the nouns, and _why_ they exist as separate classes.
 3. **Design patterns** — which GoF pattern, and the specific pain it removes.
 4. **UML diagram** — paste into a Mermaid renderer (GitHub renders it natively).
 5. **Primary workflow** — the numbered steps an actual request takes through the system.
@@ -26,6 +27,7 @@ Every system in this repo repeatedly leans on the same six ideas. Internalize th
 once, and every system below becomes "which of these six am I looking at again."
 
 ### 1. Strategy Pattern
+
 **Problem it solves:** you have a family of interchangeable algorithms (pricing
 formulas, payment methods, split rules) and you don't want `if/else` or `switch`
 blocks scattered through your service layer.
@@ -37,6 +39,7 @@ Open/Closed Principle — you add a new pricing rule by adding a new class, neve
 editing existing code.
 
 ### 2. Factory Pattern
+
 **Problem it solves:** object creation logic (which concrete class to instantiate,
 based on some enum/type flag) is messy if scattered across the codebase.
 **Shape:** a static or instance `Create(...)` method that takes a discriminator
@@ -46,6 +49,7 @@ base.
 one place, so callers only ever depend on the abstraction.
 
 ### 3. Repository Pattern
+
 **Problem it solves:** your business/service logic shouldn't care whether data lives
 in memory, SQL, or a NoSQL store.
 **Shape:** an interface (`IBookingRepository`) exposing `Get`, `Add`, `Update`, with
@@ -55,26 +59,29 @@ one or more concrete implementations (`InMemoryBookingRepository`,
 on the abstraction, and swapping storage never touches business logic.
 
 ### 4. State Pattern
+
 **Problem it solves:** an object's legal operations change depending on its current
 state (ATM: you can't dispense cash before authentication). Using flags/enums with
 big switch statements gets unmaintainable fast.
 **Shape:** an interface (`IATMState`) with one method per possible action; each
 concrete state implements only the actions legal in that state (illegal ones throw
-or no-op), and holds a reference back to the context to trigger the *next* state
+or no-op), and holds a reference back to the context to trigger the _next_ state
 transition.
 **Why interviewers like it:** it turns implicit state machines (scattered booleans)
 into explicit, testable classes — one class per node of the state diagram.
 
 ### 5. Chain of Responsibility (CoR)
+
 **Problem it solves:** a request needs to pass through a sequence of handlers, where
 each handler either resolves it or forwards it to the next one (log severity
 routing, ATM note denominations, middleware).
-**Shape:** each handler holds a reference to the *next* handler; `Handle(request)`
+**Shape:** each handler holds a reference to the _next_ handler; `Handle(request)`
 either processes and stops, or delegates by calling `next.Handle(request)`.
 **Why interviewers like it:** it decouples senders from receivers and lets you
 reorder/add handlers without touching the calling code.
 
 ### 6. Service Layer Pattern
+
 **Problem it solves:** without it, controllers/`Program.cs` end up doing
 orchestration, validation, and persistence all at once.
 **Shape:** a service class (`BookingService`, `ExpenseService`) that coordinates
@@ -84,6 +91,7 @@ calls across repositories and strategies, keeping domain entities themselves "du
 **business rules** that span multiple entities.
 
 ### Supporting SOLID vocabulary (say these out loud when explaining any diagram)
+
 - **S**ingle Responsibility — each class has one reason to change (e.g., `Ticket`
   only tracks parking metadata, it doesn't compute pricing).
 - **O**pen/Closed — new behavior via new classes, not edits to old ones (Strategy,
@@ -100,17 +108,20 @@ calls across repositories and strategies, keeping domain entities themselves "du
 ## 1. Car Rental System
 
 ### Problem framing
+
 A multi-branch vehicle rental platform: a user searches inventory across branches,
 picks a vehicle, gets a price computed by a pluggable formula, and pays through a
 pluggable payment method.
 
 ### How to approach requirements & discuss it in an interview
+
 Start by narrowing scope out loud — this problem is deceptively large, and
 interviewers want to see you fence it in before writing a single class.
 
 **Clarifying questions to ask first:**
+
 - Is this single-branch or multi-branch? Does a user ever need to compare
-  availability *across* branches, or just search one?
+  availability _across_ branches, or just search one?
 - Can a vehicle be reserved in advance (future date range) or only rented
   on-the-spot? This decides whether you need a reservation/calendar concept at
   all, or just an `IsAvailable` flag.
@@ -124,6 +135,7 @@ interviewers want to see you fence it in before writing a single class.
   successful/failed boolean callback" is a perfectly acceptable scope cut.
 
 **How to structure your answer:**
+
 1. State the scope you're assuming (functional requirements) in 3–4 bullets
    before touching entities — e.g., "I'll assume: multi-branch inventory search,
    date-range booking, pluggable pricing and payment, no partial refunds unless
@@ -131,7 +143,7 @@ interviewers want to see you fence it in before writing a single class.
 2. Call out 1–2 **non-functional** requirements unprompted: concurrency (two
    users racing for the same last vehicle) and extensibility (new vehicle types,
    new pricing rules) — this is what separates a junior answer from a senior one.
-3. Only then walk into entities, and explicitly narrate *why* each strategy
+3. Only then walk into entities, and explicitly narrate _why_ each strategy
    interface exists ("I'm pulling pricing out because the interviewer might ask
    for surge pricing later — I don't want to redesign then").
 4. End by inviting the interviewer to redirect: "Should I go deeper into the
@@ -139,19 +151,21 @@ interviewers want to see you fence it in before writing a single class.
    itself?" — this signals you're pacing yourself rather than dumping everything.
 
 ### Core entities & responsibilities
-| Class | Responsibility |
-|---|---|
-| `User` | Identity of the person booking. |
-| `Branch` | Owns a physical inventory of `Vehicle`s at one location. |
+
+| Class                | Responsibility                                                                                                 |
+| -------------------- | -------------------------------------------------------------------------------------------------------------- |
+| `User`               | Identity of the person booking.                                                                                |
+| `Branch`             | Owns a physical inventory of `Vehicle`s at one location.                                                       |
 | `Vehicle` (abstract) | Base for rentable assets; concrete types (`SUV`, `Sedan`) carry type-specific attributes (seating, fuel type). |
-| `Booking` | Binds a `User`, a `Vehicle`, a time window, and the `IPricingStrategy` used to quote it. |
-| `PaymentProcessor` | Thin wrapper that delegates to whichever `IPaymentStrategy` was chosen. |
-| `IBookingStrategy` | Encapsulates *how* a vehicle is selected/allocated (e.g., nearest branch first, cheapest first). |
-| `IPricingStrategy` | Encapsulates the fee formula (daily rate, weekend surcharge, long-term discount). |
-| `IPaymentStrategy` | Encapsulates the payment rail (card, UPI, wallet). |
+| `Booking`            | Binds a `User`, a `Vehicle`, a time window, and the `IPricingStrategy` used to quote it.                       |
+| `PaymentProcessor`   | Thin wrapper that delegates to whichever `IPaymentStrategy` was chosen.                                        |
+| `IBookingStrategy`   | Encapsulates _how_ a vehicle is selected/allocated (e.g., nearest branch first, cheapest first).               |
+| `IPricingStrategy`   | Encapsulates the fee formula (daily rate, weekend surcharge, long-term discount).                              |
+| `IPaymentStrategy`   | Encapsulates the payment rail (card, UPI, wallet).                                                             |
 
 ### Design patterns in depth
-- **Strategy (x3)** — the system separates *three independent axes of variability*:
+
+- **Strategy (x3)** — the system separates _three independent axes of variability_:
   how a vehicle is chosen, how it's priced, and how payment is collected. Notice
   each is its own interface rather than one giant "BookingOptions" object — this is
   Interface Segregation in action.
@@ -161,7 +175,7 @@ interviewers want to see you fence it in before writing a single class.
 - **Repository** — `BranchRepository` / `BookingRepository` let the same
   `BookingService` run against in-memory data in unit tests and a real DB in
   production without code changes.
-- **Service Layer** — `BookingService` is the only class that talks to *all* of:
+- **Service Layer** — `BookingService` is the only class that talks to _all_ of:
   repositories, the pricing strategy, and the payment strategy. This keeps
   `Booking` (the entity) free of orchestration logic.
 
@@ -254,6 +268,7 @@ classDiagram
 ```
 
 ### Primary workflow
+
 1. User submits a search request (vehicle type, dates, preferred location).
 2. `BookingService` asks `BranchRepository` for candidate branches, then applies
    `IBookingStrategy` to pick the best available `Vehicle`.
@@ -266,6 +281,7 @@ classDiagram
    inventory — this rollback path is exactly what interviewers probe for.
 
 ### Edge cases to mention
+
 - Double-booking the same vehicle across two concurrent requests (needs a lock or
   optimistic concurrency check at the repository layer).
 - Partial refunds on early cancellation — where would that logic live? (Answer: a
@@ -273,11 +289,12 @@ classDiagram
 - Vehicle becomes unavailable (accident/maintenance) mid-booking-window.
 
 ### Sample interview questions
-- *"How would you add a new vehicle type like `ElectricScooter` without touching
-  `BookingService`?"* → Add a new `Vehicle` subclass + a `VehicleFactory` case; no
+
+- _"How would you add a new vehicle type like `ElectricScooter` without touching
+  `BookingService`?"_ → Add a new `Vehicle` subclass + a `VehicleFactory` case; no
   other class changes (Open/Closed).
-- *"Why not just pass a pricing `enum` to `CalculateFare` instead of a strategy
-  object?"* → Enums force a switch statement somewhere; strategy objects let you
+- _"Why not just pass a pricing `enum` to `CalculateFare` instead of a strategy
+  object?"_ → Enums force a switch statement somewhere; strategy objects let you
   compose/inject pricing rules (e.g., decorate with a loyalty-discount wrapper)
   without touching the switch.
 
@@ -286,15 +303,18 @@ classDiagram
 ## 2. Movie Ticket Booking System
 
 ### Problem framing
+
 Classic high-concurrency LLD problem: many users may try to book the same seat at
 the same time; the system must guarantee at most one succeeds, while also
 supporting different seat tiers and payment rails.
 
 ### How to approach requirements & discuss it in an interview
+
 This problem is a **concurrency interview in disguise** — entities are almost
 secondary to how you reason about race conditions. Lead with that framing.
 
 **Clarifying questions to ask first:**
+
 - Single theatre or a multi-theatre/multi-city platform? Determines whether
   `Theatre`/`Screen` hierarchy is needed or you can start at `Show`.
 - Do we need a "hold" period (seat reserved for N minutes during checkout) or is
@@ -302,13 +322,14 @@ secondary to how you reason about race conditions. Lead with that framing.
   needs a TTL/expiry concept.
 - Single server or must this scale horizontally? If horizontal, say explicitly
   that in-memory locks won't work and you'd reach for a distributed lock
-  (Redis) — naming this trade-off *before* being asked is a strong signal.
+  (Redis) — naming this trade-off _before_ being asked is a strong signal.
 - Do different seat types have different prices, and can a user book seats of
   mixed types in one transaction?
 - Is overbooking ever intentionally allowed (airlines do this) or is this a
   strict no-double-booking guarantee? Confirm it's strict for a theatre.
 
 **How to structure your answer:**
+
 1. Open with the non-functional requirement first: "The core hard requirement
    here is correctness under concurrency — I'll design around that, then add
    entities."
@@ -323,16 +344,18 @@ secondary to how you reason about race conditions. Lead with that framing.
    the tab mid-payment) — don't wait to be asked.
 
 ### Core entities & responsibilities
-| Class | Responsibility |
-|---|---|
-| `Theatre` | Owns multiple `Screen`s. |
-| `Screen` | Owns multiple `Show`s (a movie playing at a specific time in that screen). |
-| `Show` | Links a `Movie` to a time slot and a seat map. |
+
+| Class             | Responsibility                                                                                                        |
+| ----------------- | --------------------------------------------------------------------------------------------------------------------- |
+| `Theatre`         | Owns multiple `Screen`s.                                                                                              |
+| `Screen`          | Owns multiple `Show`s (a movie playing at a specific time in that screen).                                            |
+| `Show`            | Links a `Movie` to a time slot and a seat map.                                                                        |
 | `Seat` (abstract) | Physical/virtual seat with booking status; concrete types (`RegularSeat`, `ReclinerSeat`) differ in price multiplier. |
-| `Booking` | The set of seats a user has reserved for one `Show`. |
-| `LockProvider` | Abstraction over the concurrency-control mechanism guarding seat selection. |
+| `Booking`         | The set of seats a user has reserved for one `Show`.                                                                  |
+| `LockProvider`    | Abstraction over the concurrency-control mechanism guarding seat selection.                                           |
 
 ### Design patterns in depth
+
 - **Locking Strategy (a specialised Strategy)** — `LockProvider` is an interface so
   the "how do we prevent double booking" mechanism is swappable: an
   `InMemoryLockProvider` (e.g., `ConcurrentDictionary` + `lock`/`Monitor`) for a
@@ -436,6 +459,7 @@ classDiagram
 ```
 
 ### Primary workflow
+
 1. User selects a `Show` and a set of seat IDs.
 2. `BookingService.HoldSeats` calls `LockProvider.TryAcquire` for **every** seat
    requested; if any single acquire fails, all previously-acquired locks in this
@@ -447,8 +471,9 @@ classDiagram
    and the booking `Confirmed`; failure releases the locks back to the pool.
 
 ### Edge cases to mention
+
 - **Race condition**: two threads reading `IsBooked == false` simultaneously before
-  either writes `true` — this is exactly why the lock must be acquired *before* the
+  either writes `true` — this is exactly why the lock must be acquired _before_ the
   availability check, not after.
 - Seat-hold expiry (abandoned carts) — needs a cleanup job or a lock with a TTL.
 - Partial seat availability within one request (user wants 4 adjacent seats but
@@ -456,31 +481,35 @@ classDiagram
   the 4th.
 
 ### Sample interview questions
-- *"Why use a `LockProvider` abstraction instead of just `lock(seat)` in C#?"* →
+
+- _"Why use a `LockProvider` abstraction instead of just `lock(seat)` in C#?"_ →
   In-process locks don't work once you scale to multiple server instances; the
   abstraction lets you swap to a distributed lock without touching
   `BookingService`.
-- *"How do you prevent seat-holds from being held forever if a user abandons
-  checkout?"* → TTL-based lock expiry + a background reconciliation job.
+- _"How do you prevent seat-holds from being held forever if a user abandons
+  checkout?"_ → TTL-based lock expiry + a background reconciliation job.
 
 ---
 
 ## 3. Parking Lot
 
 ### Problem framing
+
 Classic resource-allocation problem: vehicles of different sizes must be matched to
 compatible spots across multiple floors, with entry/exit gates and duration-based
 pricing.
 
 ### How to approach requirements & discuss it in an interview
+
 This is one of the oldest LLD questions, so interviewers expect you to move fast
 through obvious parts and spend your time on the parts that reveal judgment.
 
 **Clarifying questions to ask first:**
+
 - How many spot sizes/vehicle types are there, and can a larger vehicle use a
   smaller-labeled spot in a pinch (e.g., a bike in a car spot) or is matching
   strict?
-- How many entry/exit gates, and do we need to track *which* gate a ticket was
+- How many entry/exit gates, and do we need to track _which_ gate a ticket was
   issued from (useful for multi-gate lots wanting to display "nearest available
   floor per gate")?
 - Is pricing flat, hourly, or does it vary by vehicle type/floor (e.g., ground
@@ -491,6 +520,7 @@ through obvious parts and spend your time on the parts that reveal judgment.
   mentioning it shows completeness.
 
 **How to structure your answer:**
+
 1. Set scope fast: "I'll assume walk-in only, N floors, three vehicle types,
    hourly pricing, single active ticket per vehicle" — then move on.
 2. Spend your narrative time on **spot allocation strategy** (first-available vs.
@@ -503,16 +533,18 @@ through obvious parts and spend your time on the parts that reveal judgment.
    two edge cases interviewers most commonly probe if you don't mention them.
 
 ### Core entities & responsibilities
-| Class | Responsibility |
-|---|---|
-| `ParkingLot` | Top-level aggregate; owns floors. |
-| `ParkingFloor` | Owns a list of `ParkingSpot`s. |
-| `ParkingSpot` | Tracks its allowed vehicle type and occupancy. |
-| `Vehicle` (abstract) | `Car`, `Bike`, `Truck` — different sizes need different spot types. |
-| `Gate` (abstract) | `EntryGate` issues tickets; `ExitGate` computes fees and closes tickets. |
-| `Ticket` | Correlates a `Vehicle`, its assigned `ParkingSpot`, and entry time. |
+
+| Class                | Responsibility                                                           |
+| -------------------- | ------------------------------------------------------------------------ |
+| `ParkingLot`         | Top-level aggregate; owns floors.                                        |
+| `ParkingFloor`       | Owns a list of `ParkingSpot`s.                                           |
+| `ParkingSpot`        | Tracks its allowed vehicle type and occupancy.                           |
+| `Vehicle` (abstract) | `Car`, `Bike`, `Truck` — different sizes need different spot types.      |
+| `Gate` (abstract)    | `EntryGate` issues tickets; `ExitGate` computes fees and closes tickets. |
+| `Ticket`             | Correlates a `Vehicle`, its assigned `ParkingSpot`, and entry time.      |
 
 ### Design patterns in depth
+
 - **Factory (x3)** — `VehicleFactory` (build the right `Vehicle` subtype),
   `PricingStrategyFactory` (pick flat vs. hourly pricing), `PaymentStrategyFactory`
   (pick UPI/card/cash). Three independent factories rather than one mega-factory —
@@ -520,7 +552,7 @@ through obvious parts and spend your time on the parts that reveal judgment.
 - **Strategy** — `IPricingStrategy` (`FlatRatePricing`, `HourlyRatePricing`) is
   invoked only at `ExitGate`, keeping fee computation out of `Ticket` itself.
 - **Payment abstraction** — same `IPaymentStrategy` shape as the other systems;
-  notice the *reuse* of this exact interface pattern across nearly every system in
+  notice the _reuse_ of this exact interface pattern across nearly every system in
   the repo — a strong signal for interviewers that you internalized the pattern
   rather than memorized one example.
 
@@ -610,6 +642,7 @@ classDiagram
 ```
 
 ### Primary workflow
+
 1. Vehicle arrives at `EntryGate`; the gate calls `ParkingLot.FindSpot(type)` which
    scans floors for the first `ParkingSpot` whose `AllowedType` matches and
    `IsAvailable == true`.
@@ -622,6 +655,7 @@ classDiagram
    ticket is closed.
 
 ### Edge cases to mention
+
 - **Lot full**: `FindSpot` returns null → entry should be rejected gracefully, not
   throw an unhandled exception.
 - Vehicle-to-spot size mismatch (a `Truck` should never be assigned a
@@ -632,10 +666,11 @@ classDiagram
   same kind of locking discussion as the Movie Booking system.
 
 ### Sample interview questions
-- *"How do you support a lot where a large vehicle can occupy multiple adjacent
-  small spots?"* → `ParkingSpot` allocation becomes a small bin-packing problem;
+
+- _"How do you support a lot where a large vehicle can occupy multiple adjacent
+  small spots?"_ → `ParkingSpot` allocation becomes a small bin-packing problem;
   you'd likely introduce a `SpotGroup` concept.
-- *"Why three separate factories instead of one `LotObjectFactory`?"* → Single
+- _"Why three separate factories instead of one `LotObjectFactory`?"_ → Single
   Responsibility — each factory's only reason to change is its own enum growing.
 
 ---
@@ -643,14 +678,17 @@ classDiagram
 ## 4. Rate Limiter
 
 ### Problem framing
+
 Throttle API requests per user according to a configurable policy (free vs.
 premium tier), while supporting multiple competing throttling algorithms.
 
 ### How to approach requirements & discuss it in an interview
+
 This problem rewards showing you know the **trade-offs between algorithms**
 more than it rewards a clever class diagram — steer the conversation there.
 
 **Clarifying questions to ask first:**
+
 - Is the limit per-user, per-IP, per-API-key, or per-endpoint (or a combination)?
   This decides what the "key" into your internal counters actually is.
 - Single server instance or a distributed fleet? If distributed, the whole
@@ -666,40 +704,44 @@ more than it rewards a clever class diagram — steer the conversation there.
   hardcoded constants.
 
 **How to structure your answer:**
+
 1. Immediately name the three-way trade-off (fixed window vs. sliding window log
    vs. token bucket) — accuracy vs. memory vs. burst tolerance — before writing
    any class. This is the single most important thing to say in this problem.
 2. State your assumption on distribution model up front: "I'll design for a
    single process first with in-memory state, then note what changes for a
    distributed deployment."
-3. Use the `RateLimiterFactory` to demonstrate you thought about *config-driven*
+3. Use the `RateLimiterFactory` to demonstrate you thought about _config-driven_
    selection (per-tier algorithm choice) rather than a single global algorithm.
 4. Proactively raise thread-safety of the counters — this is the most common
    follow-up question and volunteering it early buys you credibility.
 
 ### Core entities & responsibilities
-| Class | Responsibility |
-|---|---|
-| `User` | Carries a `UserTier` that determines which policy applies. |
-| `RateLimitConfig` | Numeric policy knobs: `MaxRequests`, `WindowSeconds`. |
-| `RateLimiter` (abstract) | Base contract: `AllowRequest(userId)`. |
-| `RateLimiterService` | Public-facing switchboard that hides which concrete algorithm is active. |
-| `RateLimiterFactory` | Chooses the concrete `RateLimiter` from a `RateLimitType` + config. |
+
+| Class                    | Responsibility                                                           |
+| ------------------------ | ------------------------------------------------------------------------ |
+| `User`                   | Carries a `UserTier` that determines which policy applies.               |
+| `RateLimitConfig`        | Numeric policy knobs: `MaxRequests`, `WindowSeconds`.                    |
+| `RateLimiter` (abstract) | Base contract: `AllowRequest(userId)`.                                   |
+| `RateLimiterService`     | Public-facing switchboard that hides which concrete algorithm is active. |
+| `RateLimiterFactory`     | Chooses the concrete `RateLimiter` from a `RateLimitType` + config.      |
 
 ### Design patterns in depth
+
 - **Abstract algorithm family** — this is Strategy again, but named `RateLimiter`
-  instead of `I...Strategy`; recognize that GoF pattern names are about *shape*,
+  instead of `I...Strategy`; recognize that GoF pattern names are about _shape_,
   not literal naming conventions.
 - **Factory** — `RateLimiterFactory` is what lets you A/B test algorithms per user
   tier (e.g., premium users get `TokenBucketRateLimiter` for burst tolerance, free
   users get `FixedWindowRateLimiter` for simplicity) purely through configuration.
 
 ### The three algorithms, compared
-| Algorithm | How it works | Pros | Cons |
-|---|---|---|---|
-| **Fixed Window** | Count requests in a fixed clock-aligned window (e.g., 0:00–0:59); reset the counter each window. | Simple, O(1) memory per user. | Bursts at window boundaries (2x the limit possible right at the edge). |
-| **Sliding Window Log** | Store a timestamp per request; count timestamps within the trailing window. | Perfectly accurate. | O(n) memory — every request timestamp is retained. |
-| **Token Bucket** | Bucket refills at a fixed rate up to a capacity; each request consumes one token. | Allows controlled bursts, smooths traffic. | Slightly harder to reason about/tune (rate + capacity). |
+
+| Algorithm              | How it works                                                                                     | Pros                                       | Cons                                                                   |
+| ---------------------- | ------------------------------------------------------------------------------------------------ | ------------------------------------------ | ---------------------------------------------------------------------- |
+| **Fixed Window**       | Count requests in a fixed clock-aligned window (e.g., 0:00–0:59); reset the counter each window. | Simple, O(1) memory per user.              | Bursts at window boundaries (2x the limit possible right at the edge). |
+| **Sliding Window Log** | Store a timestamp per request; count timestamps within the trailing window.                      | Perfectly accurate.                        | O(n) memory — every request timestamp is retained.                     |
+| **Token Bucket**       | Bucket refills at a fixed rate up to a capacity; each request consumes one token.                | Allows controlled bursts, smooths traffic. | Slightly harder to reason about/tune (rate + capacity).                |
 
 ### Expanded UML
 
@@ -749,6 +791,7 @@ classDiagram
 ```
 
 ### Primary workflow
+
 1. A request arrives tagged with a `User`.
 2. `RateLimiterService.TryProcess` resolves the `RateLimitConfig` for that user's
    tier and asks `RateLimiterFactory` for the configured algorithm (cached per
@@ -759,6 +802,7 @@ classDiagram
 4. On `false`, the caller returns HTTP 429; on `true`, the request proceeds.
 
 ### Edge cases to mention
+
 - **Thread safety**: two requests from the same user arriving concurrently must
   not both read `count = 4` and both increment to `5` when the limit is `5` —
   needs atomic increments (`Interlocked`, or a `ConcurrentDictionary` with
@@ -769,10 +813,11 @@ classDiagram
   needs periodic pruning of old timestamps.
 
 ### Sample interview questions
-- *"Which algorithm would you pick for a payments API and why?"* → Sliding window
+
+- _"Which algorithm would you pick for a payments API and why?"_ → Sliding window
   log or a Redis-backed sliding window counter, for its accuracy — payments
   APIs care more about correctness than raw memory efficiency.
-- *"How would you rate-limit by IP instead of by user?"* → Change the key used in
+- _"How would you rate-limit by IP instead of by user?"_ → Change the key used in
   the internal dictionaries from `userId` to `ip`; the algorithm classes need
   zero changes, showing why Strategy-style separation pays off.
 
@@ -781,22 +826,25 @@ classDiagram
 ## 5. Logger Framework
 
 ### Problem framing
+
 A pluggable logging pipeline: a `LogMessage` should route to the correct severity
 handler, then be formatted and shipped to one or more destinations — all
 independently swappable.
 
 ### How to approach requirements & discuss it in an interview
+
 This problem is really testing whether you can decompose "log a message" into
 independent axes rather than one monolithic `Log()` method — say that framing
 out loud early.
 
 **Clarifying questions to ask first:**
+
 - Does one severity level cascade to lower-priority appenders too (an `ERROR`
   message also appears in the general log), or does exactly one handler
   "consume" each message? Get this settled before drawing the CoR chain, since
   it changes what `Handle()` returns/does.
 - How many output destinations at once — can a single message go to console
-  *and* file *and* a remote sink simultaneously?
+  _and_ file _and_ a remote sink simultaneously?
 - Is formatting global (one format for the whole app) or configurable per
   destination (JSON to a log aggregator, plain text to console)?
 - Is this synchronous (caller blocks until written) or should slow destinations
@@ -805,9 +853,10 @@ out loud early.
   without redeploying)?
 
 **How to structure your answer:**
+
 1. Explicitly separate the three concerns before naming any class: **routing**
    (which handler cares about this severity), **formatting** (how it looks), and
-   **transport** (where it goes). This three-way split *is* the design.
+   **transport** (where it goes). This three-way split _is_ the design.
 2. Justify Chain of Responsibility by the alternative it avoids: "without CoR
    I'd need a switch on severity inside one giant method that also does
    formatting and writing — that violates single responsibility and is hard to
@@ -818,25 +867,27 @@ out loud early.
    and showing it only needs a new `ILogAppender`, nothing else.
 
 ### Core entities & responsibilities
-| Class | Responsibility |
-|---|---|
-| `LogMessage` | Immutable payload: text, severity, timestamp. |
+
+| Class                        | Responsibility                                                                                                |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| `LogMessage`                 | Immutable payload: text, severity, timestamp.                                                                 |
 | `LogHandler` (abstract, CoR) | `InfoHandler` / `WarnHandler` / `ErrorHandler` — each decides if it should handle a message or pass it along. |
-| `ILogFormatter` | Converts a `LogMessage` into a string representation (plain text, JSON). |
-| `ILogAppender` | Ships the formatted string to a destination (console, file, and by extension DB/Kafka). |
-| `LoggerService` | Entry point that pushes a message into the handler chain. |
+| `ILogFormatter`              | Converts a `LogMessage` into a string representation (plain text, JSON).                                      |
+| `ILogAppender`               | Ships the formatted string to a destination (console, file, and by extension DB/Kafka).                       |
+| `LoggerService`              | Entry point that pushes a message into the handler chain.                                                     |
 
 ### Design patterns in depth
+
 - **Chain of Responsibility** — `InfoHandler → WarnHandler → ErrorHandler` (or
   reverse, depending on convention) each wired with a `next` reference. A common
-  interview trap: does *every* handler in the chain get to act on a message (e.g.,
-  all handlers at or above the message's severity log it), or does *exactly one*
+  interview trap: does _every_ handler in the chain get to act on a message (e.g.,
+  all handlers at or above the message's severity log it), or does _exactly one_
   handler consume it? Both are valid CoR variants — be ready to argue for
   "cascading" logging (an `ERROR` message is also logged by the `WARN` and `INFO`
   appenders if they're subscribed) since that matches how most real logging
   frameworks (Log4j, Serilog) behave.
 - **Strategy (x2)** — `ILogFormatter` and `ILogAppender` are orthogonal axes:
-  *how* a message looks vs. *where* it goes. You can mix `JsonFormatter` with
+  _how_ a message looks vs. _where_ it goes. You can mix `JsonFormatter` with
   `FileAppender` or `PlainTextFormatter` with `ConsoleAppender` without either
   side knowing about the other — that's the payoff of keeping them as two
   separate interfaces instead of one `ILogSink`.
@@ -892,6 +943,7 @@ classDiagram
 ```
 
 ### Primary workflow
+
 1. Caller invokes `LoggerService.Log(text, level)`.
 2. `LoggerService` wraps it into a `LogMessage` and hands it to the head of the
    handler chain.
@@ -903,6 +955,7 @@ classDiagram
    the lowest configured threshold), it's silently dropped.
 
 ### Edge cases to mention
+
 - Adding a brand-new severity (`CRITICAL`) shouldn't require touching
   `LoggerService` — just insert a new `LogHandler` subclass into the chain.
 - Multiple appenders writing to slow destinations (network Kafka) — should this
@@ -912,11 +965,12 @@ classDiagram
   configuration rather than globally.
 
 ### Sample interview questions
-- *"How would you add log sampling (only log 1 in 100 INFO messages)?"* → Wrap
+
+- _"How would you add log sampling (only log 1 in 100 INFO messages)?"_ → Wrap
   `InfoHandler` in a decorator, or add a sampling check inside
   `InfoHandler.Handle` before calling appenders — doesn't require touching CoR
   wiring.
-- *"Why two interfaces (`ILogFormatter`, `ILogAppender`) instead of one?"* →
+- _"Why two interfaces (`ILogFormatter`, `ILogAppender`) instead of one?"_ →
   Interface Segregation: format and transport are independent concerns, and
   combining them would force an N×M explosion of classes instead of N+M.
 
@@ -925,15 +979,18 @@ classDiagram
 ## 6. Snakes and Ladders
 
 ### Problem framing
+
 A simplified board-game simulator emphasizing clean object composition over
 patterns — a good "warm-up" LLD problem interviewers use to see how you structure
 even a simple domain.
 
 ### How to approach requirements & discuss it in an interview
+
 Because this problem is simple, the trap is over-engineering it. The interview
 signal here is "can you keep a design proportional to the problem."
 
 **Clarifying questions to ask first:**
+
 - Board size and number of players — fixed at 100 cells/2 players, or
   configurable? Confirm it's configurable so you build `Board.Size` as a field,
   not a constant.
@@ -947,6 +1004,7 @@ signal here is "can you keep a design proportional to the problem."
   a local simulation.
 
 **How to structure your answer:**
+
 1. State plainly that you're deliberately **not** reaching for a GoF pattern for
    every class — only `ObstacleFactory` earns its place because obstacle
    creation is genuinely varied (snake vs. ladder, and possibly more types
@@ -962,17 +1020,19 @@ signal here is "can you keep a design proportional to the problem."
    multiple game variants" — that judgment call is exactly what's being tested.
 
 ### Core entities & responsibilities
-| Class | Responsibility |
-|---|---|
-| `Game` | Owns the `Board`, the list of `Player`s, turn order, and the win condition. |
-| `Board` | A linear sequence of `Cell`s (typically 100). |
-| `Cell` | May hold an `Obstacle` (a snake head or ladder bottom). |
-| `Dice` | Produces a random roll (1–6), abstracted so tests can inject a fixed sequence. |
-| `Player` | Tracks current position. |
-| `Obstacle` (abstract) | `Snake` (moves you backward) / `Ladder` (moves you forward). |
-| `ObstacleFactory` | Builds a `Snake` or `Ladder` from config (`head/tail` or `bottom/top` cell numbers). |
+
+| Class                 | Responsibility                                                                       |
+| --------------------- | ------------------------------------------------------------------------------------ |
+| `Game`                | Owns the `Board`, the list of `Player`s, turn order, and the win condition.          |
+| `Board`               | A linear sequence of `Cell`s (typically 100).                                        |
+| `Cell`                | May hold an `Obstacle` (a snake head or ladder bottom).                              |
+| `Dice`                | Produces a random roll (1–6), abstracted so tests can inject a fixed sequence.       |
+| `Player`              | Tracks current position.                                                             |
+| `Obstacle` (abstract) | `Snake` (moves you backward) / `Ladder` (moves you forward).                         |
+| `ObstacleFactory`     | Builds a `Snake` or `Ladder` from config (`head/tail` or `bottom/top` cell numbers). |
 
 ### Design patterns in depth
+
 - **Factory** — `ObstacleFactory.Create(ObstacleType, start, end)` keeps board
   setup declarative: you feed it a list of `(type, start, end)` tuples read from
   config/JSON, and it builds the right `Obstacle` instances without `Board`
@@ -1033,6 +1093,7 @@ classDiagram
 ```
 
 ### Primary workflow
+
 1. `Game.Play()` loops while `!IsWon()`.
 2. On each turn, the current `Player` calls `Dice.Roll()`, then `Player.Move(steps)`.
 3. `Board.GetCell(newPosition)` is checked for an `Obstacle`; if present,
@@ -1042,6 +1103,7 @@ classDiagram
    position exactly reaches the final cell.
 
 ### Edge cases to mention
+
 - Overshoot past the last cell (roll takes you past 100) — typically the move is
   disallowed for that turn.
 - Landing exactly on a cell that's both a snake head and another obstacle's tail
@@ -1051,10 +1113,11 @@ classDiagram
   in the base variant) unless specified otherwise.
 
 ### Sample interview questions
-- *"How would you support multiple dice or a variable board size?"* → `Dice`
+
+- _"How would you support multiple dice or a variable board size?"_ → `Dice`
   count becomes a list injected into `Game`; `Board.Size` is already a
   configurable field, so no structural change needed.
-- *"Why is `Obstacle.Apply` on the obstacle itself rather than in `Board`?"* →
+- _"Why is `Obstacle.Apply` on the obstacle itself rather than in `Board`?"_ →
   Single Responsibility — the board manages geometry (which cell is where);
   the obstacle owns its own movement-transformation rule.
 
@@ -1063,16 +1126,19 @@ classDiagram
 ## 7. LFU Cache
 
 ### Problem framing
+
 A classic data-structure interview problem, not a "systems" LLD problem — the
 "design" is about achieving O(1) average time for `get`/`put` while evicting the
 **L**east **F**requently **U**sed key (breaking ties by **L**east **R**ecently
 **U**sed within the same frequency).
 
 ### How to approach requirements & discuss it in an interview
+
 This is a DS&A-flavored LLD question — the "requirements gathering" step is
 short, but skipping it entirely still costs you points.
 
 **Clarifying questions to ask first:**
+
 - Confirm the eviction tie-break rule explicitly: "when two keys have the same
   lowest frequency, do we evict the least-recently-used among them?" — don't
   assume; some variants use insertion order instead of access order as the
@@ -1092,10 +1158,11 @@ short, but skipping it entirely still costs you points.
   structures").
 
 **How to structure your answer:**
+
 1. Don't jump into code — first say the invariant in one sentence: "every key
    lives in exactly one frequency bucket, buckets are ordered by recency
    internally, and `minFreq` always points at the lowest non-empty bucket."
-   Getting this sentence right *is* the design.
+   Getting this sentence right _is_ the design.
 2. Derive the two dictionaries from the invariant, not the other way around:
    "since I need O(1) lookup by key, I need a hash map; since I need O(1)
    promote-and-relocate on access, each bucket needs to be a doubly linked list,
@@ -1107,13 +1174,15 @@ short, but skipping it entirely still costs you points.
    space) at the end, unprompted.
 
 ### Core entities & responsibilities
-| Class | Responsibility |
-|---|---|
-| `Node` | Doubly-linked list node holding `key`, `value`, `frequency`. |
-| `DoublyLinkedList` | One list *per frequency bucket*; supports O(1) insert-at-head and O(1) remove-from-anywhere (given a node reference). |
-| `LFUCache` | Orchestrates the key→node map, the frequency→list map, and `minFreq` tracking. |
+
+| Class              | Responsibility                                                                                                        |
+| ------------------ | --------------------------------------------------------------------------------------------------------------------- |
+| `Node`             | Doubly-linked list node holding `key`, `value`, `frequency`.                                                          |
+| `DoublyLinkedList` | One list _per frequency bucket_; supports O(1) insert-at-head and O(1) remove-from-anywhere (given a node reference). |
+| `LFUCache`         | Orchestrates the key→node map, the frequency→list map, and `minFreq` tracking.                                        |
 
 ### The core idea, explained
+
 - **`Dictionary<key, Node> cache`** gives O(1) lookup of a node by key.
 - **`Dictionary<int freq, DoublyLinkedList> freqMap`** groups all nodes that share
   the same access frequency into their own list.
@@ -1122,9 +1191,9 @@ short, but skipping it entirely still costs you points.
   frequency bucket the list is ordered most-recently-used at the head).
 - On every `get`/`put` that touches an existing key: remove the node from its
   current frequency bucket, increment its frequency, and re-insert it at the
-  *head* of the new frequency's bucket. If the old bucket becomes empty **and**
+  _head_ of the new frequency's bucket. If the old bucket becomes empty **and**
   it was `minFreq`, bump `minFreq` by 1.
-- On `put` for a *new* key when the cache is full: evict the tail node of the
+- On `put` for a _new_ key when the cache is full: evict the tail node of the
   `minFreq` bucket, then insert the new key with frequency 1 and set
   `minFreq = 1`.
 
@@ -1163,6 +1232,7 @@ classDiagram
 ```
 
 ### Primary workflow (`put`)
+
 1. If `key` already exists: update its `Value`, then call the internal
    `Touch(node)` helper (bumps frequency + relocates bucket).
 2. If `key` is new and `cache.Count == capacity`: evict `freqMap[minFreq].RemoveLast()`
@@ -1171,11 +1241,13 @@ classDiagram
    `minFreq = 1`.
 
 ### Primary workflow (`get`)
+
 1. If `key` not found, return "not found" sentinel (or throw, per contract).
 2. Otherwise call `Touch(node)` (same relocate-and-bump logic as `put`'s update
    path) and return `node.Value`.
 
 ### Edge cases to mention
+
 - `capacity == 0` — every `put` should be a no-op (never actually caches).
 - Repeated `get`s on the same single key — frequency should keep incrementing
   without any bug in bucket cleanup (a common off-by-one source: forgetting to
@@ -1185,10 +1257,11 @@ classDiagram
   set/queue.
 
 ### Sample interview questions
-- *"Walk me through why this is O(1) amortized, not O(1) worst case in some naive
-  implementations."* → Because every operation (dictionary lookup, linked-list
+
+- _"Walk me through why this is O(1) amortized, not O(1) worst case in some naive
+  implementations."_ → Because every operation (dictionary lookup, linked-list
   insert/remove given a node reference) is O(1); there's no scanning.
-- *"How is this different from an LRU cache?"* → LRU evicts strictly by recency
+- _"How is this different from an LRU cache?"_ → LRU evicts strictly by recency
   (one ordered list total); LFU evicts by frequency first, recency only as a
   tiebreaker (hence the two-level dictionary-of-lists structure).
 
@@ -1197,15 +1270,18 @@ classDiagram
 ## 8. ATM System
 
 ### Problem framing
+
 Model the complete ATM session lifecycle — card insertion, PIN authentication,
 withdrawal request, and physical cash dispensing — where **the set of legal
 actions changes at every step**.
 
 ### How to approach requirements & discuss it in an interview
+
 The interviewer is testing whether you reach for **State** naturally, so make
 the state machine the first thing you draw — even before the class diagram.
 
 **Clarifying questions to ask first:**
+
 - Which operations are in scope — withdrawal only, or also balance inquiry,
   deposit, PIN change, mini-statement? Confirm withdrawal-only if that's the
   core ask, and mention the others are "just new states" if asked to extend.
@@ -1222,13 +1298,14 @@ the state machine the first thing you draw — even before the class diagram.
   `ATMMachine` instances, e.g., for a bank's monitoring dashboard)?
 
 **How to structure your answer:**
+
 1. Draw the **state diagram** first, in words: Idle → Card Inserted →
    Authenticated → Dispensing → (back to) Idle, and note the exceptional edges
    (wrong PIN → Idle after N attempts; eject-card is legal from almost anywhere).
    This alone demonstrates you understood the problem before touching code.
 2. Explicitly justify **why** State beats a boolean-flag approach: "Without it,
    `ATMMachine` would need something like `isCardInserted && isAuthenticated &&
-   !isDispensing` guards sprinkled everywhere — State pattern makes each stage's
+!isDispensing` guards sprinkled everywhere — State pattern makes each stage's
    legal actions self-contained."
 3. Bring up the denomination-shortfall edge case yourself and connect it to CoR:
    "the dispenser chain needs to detect an undispensable remainder and roll back
@@ -1238,21 +1315,23 @@ the state machine the first thing you draw — even before the class diagram.
    OOP diagram.
 
 ### Core entities & responsibilities
-| Class | Responsibility |
-|---|---|
-| `ATMMachine` | The context object: holds the current `ATMState`, the inserted `Card`, and delegates every user action to the current state. |
-| `ATMModel` | Static machine info (serial number, supported denominations, physical cash inventory). |
-| `Card` | Bank card details, linked to an `Account`. |
-| `Account` | Balance and account holder info. |
-| `ATMRepository` | Persists/retrieves machine + transaction state. |
-| `ATMState` (interface) | `IdleState`, `CardInsertedState`, `AuthenticatedState`, `DispenseCashState`. |
-| `CashDispenser` (interface, CoR) | `TwoThousandDispenser → FiveHundredDispenser → OneHundredDispenser`. |
+
+| Class                            | Responsibility                                                                                                               |
+| -------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| `ATMMachine`                     | The context object: holds the current `ATMState`, the inserted `Card`, and delegates every user action to the current state. |
+| `ATMModel`                       | Static machine info (serial number, supported denominations, physical cash inventory).                                       |
+| `Card`                           | Bank card details, linked to an `Account`.                                                                                   |
+| `Account`                        | Balance and account holder info.                                                                                             |
+| `ATMRepository`                  | Persists/retrieves machine + transaction state.                                                                              |
+| `ATMState` (interface)           | `IdleState`, `CardInsertedState`, `AuthenticatedState`, `DispenseCashState`.                                                 |
+| `CashDispenser` (interface, CoR) | `TwoThousandDispenser → FiveHundredDispenser → OneHundredDispenser`.                                                         |
 
 ### Design patterns in depth
+
 - **State** — this is the textbook example. `ATMMachine.InsertCard()` behaves
   completely differently depending on whether the current state is `IdleState`
   (accepts it, transitions to `CardInsertedState`) or `AuthenticatedState`
-  (rejects — a card is already active). Each state class implements the *same*
+  (rejects — a card is already active). Each state class implements the _same_
   interface but only meaningfully handles the actions valid for that stage;
   invalid actions either throw a domain exception or return a "not allowed"
   result. Critically, **the state itself decides the next transition** — e.g.,
@@ -1261,7 +1340,7 @@ the state machine the first thing you draw — even before the class diagram.
 - **Chain of Responsibility** — `DispenseCashState` doesn't compute denomination
   breakdown itself; it hands the requested amount to
   `TwoThousandDispenser`, which greedily dispenses as many ₹2000 notes as
-  possible, then forwards the *remainder* to `FiveHundredDispenser`, and so on.
+  possible, then forwards the _remainder_ to `FiveHundredDispenser`, and so on.
   Each handler only knows about its own denomination and the "next" handler —
   it never needs to know the whole denomination list.
 - **Repository** — `ATMRepository` is what lets the same state-machine logic run
@@ -1336,6 +1415,7 @@ classDiagram
 ```
 
 ### Primary workflow
+
 1. `IdleState`: `InsertCard(card)` is the only legal action → transitions to
    `CardInsertedState`.
 2. `CardInsertedState`: `EnterPin(pin)` validates against `Account` (via
@@ -1349,7 +1429,8 @@ classDiagram
    ejects the card and returns to `IdleState`.
 
 ### Edge cases to mention
-- Insufficient machine cash for the *exact* amount even though the account has
+
+- Insufficient machine cash for the _exact_ amount even though the account has
   enough balance (e.g., withdraw ₹300 when only ₹2000 notes remain) — the CoR
   chain must detect an un-dispensable remainder and reject the whole
   transaction rather than dispense a wrong amount.
@@ -1362,11 +1443,12 @@ classDiagram
   almost any state, as a safety/UX guarantee.
 
 ### Sample interview questions
-- *"Why State pattern instead of one big `switch(currentStateEnum)` inside
-  `ATMMachine`?"* → Each state's legal transitions and validation logic live in
+
+- _"Why State pattern instead of one big `switch(currentStateEnum)` inside
+  `ATMMachine`?"_ → Each state's legal transitions and validation logic live in
   their own class — adding a new state (e.g., `MiniStatementState`) doesn't
   bloat `ATMMachine`, satisfying Open/Closed.
-- *"How would you add a ₹5000 note to the dispenser chain?"* → Insert a new
+- _"How would you add a ₹5000 note to the dispenser chain?"_ → Insert a new
   `FiveThousandDispenser` at the head of the chain; no other dispenser or the
   `DispenseCashState` needs to change.
 
@@ -1375,16 +1457,19 @@ classDiagram
 ## 9. Splitwise Expense Sharing System
 
 ### Problem framing
+
 The most "business-logic-heavy" system in the repo: track who paid for a shared
 expense, how it should be split among participants, and how to net out balances
 into the minimum number of settling transactions.
 
 ### How to approach requirements & discuss it in an interview
+
 This problem has the most "business rule" surface area in the repo, so most of
 your interview time should go to nailing down splitting/settlement rules, not
 class names.
 
 **Clarifying questions to ask first:**
+
 - Which split types are in scope: equal, percentage, exact/unequal amounts,
   shares (weighted)? Confirm the initial set (usually equal + percentage) and
   say the rest are "just new `ISplitStrategy` implementations."
@@ -1402,6 +1487,7 @@ class names.
   single currency to avoid scope creep.
 
 **How to structure your answer:**
+
 1. Separate the problem into three phases out loud before diagramming:
    **(a)** record an expense and compute splits, **(b)** maintain running
    balances, **(c)** optionally simplify balances into minimal settlements.
@@ -1410,24 +1496,26 @@ class names.
    an 'itemized bill' split where each person only pays for what they ordered,
    that's just one more strategy implementation."
 3. When you get to `DebtSimplificationService`, explain the greedy
-   max-creditor/max-debtor algorithm in plain English *before* mentioning any
+   max-creditor/max-debtor algorithm in plain English _before_ mentioning any
    data structure (max-heap) — interviewers want to hear the idea first.
 4. Proactively flag the rounding and validation edge cases (percentages not
    summing to 100%, negative amounts) — these are the most common places
    candidates lose points by only handling the happy path.
 
 ### Core entities & responsibilities
-| Class | Responsibility |
-|---|---|
-| `User` | A person who can owe or be owed money. |
-| `Group` | Owns members, expenses, and per-member `BalanceSheet`s. |
-| `Expense` | One shared cost: amount, who paid, and the resulting `Split`s. |
-| `Split` | One participant's share of one `Expense`. |
-| `BalanceSheet` | Per-user running totals (`TotalPaid`, `TotalExpense`, net `Balances` against every other user). |
-| `ISplitStrategy` | `EqualSplitStrategy`, `PercentageSplitStrategy` — the rule for turning one `Expense.Amount` into a list of `Split`s. |
-| `GroupService` / `ExpenseService` / `BalanceSheetService` / `DebtSimplificationService` | The four-way service layer split — each owns one stage of the pipeline. |
+
+| Class                                                                                   | Responsibility                                                                                                       |
+| --------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| `User`                                                                                  | A person who can owe or be owed money.                                                                               |
+| `Group`                                                                                 | Owns members, expenses, and per-member `BalanceSheet`s.                                                              |
+| `Expense`                                                                               | One shared cost: amount, who paid, and the resulting `Split`s.                                                       |
+| `Split`                                                                                 | One participant's share of one `Expense`.                                                                            |
+| `BalanceSheet`                                                                          | Per-user running totals (`TotalPaid`, `TotalExpense`, net `Balances` against every other user).                      |
+| `ISplitStrategy`                                                                        | `EqualSplitStrategy`, `PercentageSplitStrategy` — the rule for turning one `Expense.Amount` into a list of `Split`s. |
+| `GroupService` / `ExpenseService` / `BalanceSheetService` / `DebtSimplificationService` | The four-way service layer split — each owns one stage of the pipeline.                                              |
 
 ### Design patterns in depth
+
 - **Strategy** — `ISplitStrategy` cleanly separates "how much does each person
   owe" from "how do we record and settle it." Adding `SplitType.Unequal` (exact
   custom amounts per person) or `Shares` (weighted split, e.g., 2:1:1) is purely
@@ -1443,7 +1531,7 @@ class names.
   - `GroupService` — membership operations (add/remove user, create group).
   - `ExpenseService` — validates and records a new `Expense`, invoking the
     correct `ISplitStrategy`.
-  - `BalanceSheetService` — the *only* class allowed to mutate `BalanceSheet`
+  - `BalanceSheetService` — the _only_ class allowed to mutate `BalanceSheet`
     objects; keeps balance-update logic in one place so it can't drift out of
     sync across call sites.
   - `DebtSimplificationService` — a distinct algorithmic concern (graph/greedy
@@ -1451,9 +1539,11 @@ class names.
     with expense recording, so it deserves its own class.
 
 ### The debt-simplification idea, explained
+
 Given a group's net balances (some members net-owe, some net-are-owed), the goal
 is to settle everyone using the fewest possible transactions instead of naively
 replaying every individual expense. The standard approach:
+
 1. Compute each member's **net balance** (positive = owed money, negative =
    owes money) by summing `BalanceSheet.Balances` across all counterparties.
 2. Repeatedly pick the member with the **maximum positive** net balance and the
@@ -1462,7 +1552,7 @@ replaying every individual expense. The standard approach:
 3. Zero out whichever side was fully settled and repeat until all balances are
    ~0. This greedy approach is a well-known interview talking point — mention
    its complexity (`O(n log n)` per round with a max-heap, `O(n)` rounds) and
-   that it's optimal in transaction *count* under reasonable assumptions.
+   that it's optimal in transaction _count_ under reasonable assumptions.
 
 ### Expanded UML
 
@@ -1543,6 +1633,7 @@ classDiagram
 ```
 
 ### Primary workflow
+
 1. `GroupService.CreateGroup` sets up a `Group` with an empty `BalanceSheet` per
    member.
 2. `ExpenseService.AddExpense` is called with an amount, payer, and
@@ -1557,6 +1648,7 @@ classDiagram
    zero everyone out.
 
 ### Edge cases to mention
+
 - Floating-point rounding when splitting an odd amount equally among 3 people
   (₹100/3) — someone must absorb the remaining paisa; decide and document a
   consistent rule (usually the payer or the first participant).
@@ -1569,11 +1661,12 @@ classDiagram
   worth explicitly calling out as "the point" of the algorithm).
 
 ### Sample interview questions
-- *"Why not let `Expense` directly hold and mutate `BalanceSheet`?"* →
+
+- _"Why not let `Expense` directly hold and mutate `BalanceSheet`?"_ →
   Single Responsibility: `Expense` is just data; `BalanceSheetService` is the
   one place mutation logic lives, so it's testable and auditable in isolation.
-- *"How would you add an 'Unequal Split' where each person can specify an exact
-  amount?"* → New `UnequalSplitStrategy : ISplitStrategy` that validates the
+- _"How would you add an 'Unequal Split' where each person can specify an exact
+  amount?"_ → New `UnequalSplitStrategy : ISplitStrategy` that validates the
   input amounts sum to the total, wired into `SplitStrategyFactory` — zero
   changes elsewhere.
 
@@ -1581,13 +1674,13 @@ classDiagram
 
 ## 10. Common LLD Interview Checklist
 
-When answering *any* of the above in an interview, use this structure:
+When answering _any_ of the above in an interview, use this structure:
 
 1. **State the core entities and their responsibilities** — one sentence per
    class, framed as "owns" or "computes," not "has a bunch of fields."
 2. **Explain the key relationships and cardinality** — composition (`*--`) vs.
    plain association (`-->`) vs. inheritance (`<|--`) vs. interface
-   implementation (`<|..`); say *why* each relationship is composition rather
+   implementation (`<|..`); say _why_ each relationship is composition rather
    than just association (ownership/lifecycle coupling).
 3. **Identify the design patterns used and why they matter** — always tie a
    pattern back to the specific pain it removes (switch-statement sprawl,
@@ -1599,7 +1692,7 @@ When answering *any* of the above in an interview, use this structure:
    weight this heavily; a design that only handles the happy path is
    incomplete.
 6. **Highlight extensibility and testability** — name a concrete future
-   requirement and show it only needs a *new class*, not edits to existing
+   requirement and show it only needs a _new class_, not edits to existing
    ones.
 
 ---
@@ -1608,17 +1701,17 @@ When answering *any* of the above in an interview, use this structure:
 
 Use this table to quickly recall "which system taught me this pattern again?"
 
-| Pattern | Systems that use it |
-|---|---|
-| Strategy | Car Rental (pricing/payment/booking), Movie Booking (payment), Rate Limiter (algorithm), Splitwise (split rule), Parking Lot (pricing) |
-| Factory | Car Rental (vehicle), Parking Lot (vehicle/pricing/payment), Rate Limiter (limiter), Snakes & Ladders (obstacle), Splitwise (split strategy) |
-| Repository | Car Rental, Movie Booking, Splitwise (all: abstracting storage from services) |
-| State | ATM (idle → card inserted → authenticated → dispensing) |
-| Chain of Responsibility | Logger (severity routing), ATM (denomination dispensing) |
-| Service Layer | Car Rental, Movie Booking, Splitwise (heaviest use — 4 cooperating services) |
-| Locking / concurrency control | Movie Booking (seat locks), implicitly Parking Lot & Rate Limiter (concurrent counters) |
-| Pure data-structure design (no GoF pattern) | LFU Cache |
-| Deliberately simple composition | Snakes and Ladders |
+| Pattern                                     | Systems that use it                                                                                                                          |
+| ------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| Strategy                                    | Car Rental (pricing/payment/booking), Movie Booking (payment), Rate Limiter (algorithm), Splitwise (split rule), Parking Lot (pricing)       |
+| Factory                                     | Car Rental (vehicle), Parking Lot (vehicle/pricing/payment), Rate Limiter (limiter), Snakes & Ladders (obstacle), Splitwise (split strategy) |
+| Repository                                  | Car Rental, Movie Booking, Splitwise (all: abstracting storage from services)                                                                |
+| State                                       | ATM (idle → card inserted → authenticated → dispensing)                                                                                      |
+| Chain of Responsibility                     | Logger (severity routing), ATM (denomination dispensing)                                                                                     |
+| Service Layer                               | Car Rental, Movie Booking, Splitwise (heaviest use — 4 cooperating services)                                                                 |
+| Locking / concurrency control               | Movie Booking (seat locks), implicitly Parking Lot & Rate Limiter (concurrent counters)                                                      |
+| Pure data-structure design (no GoF pattern) | LFU Cache                                                                                                                                    |
+| Deliberately simple composition             | Snakes and Ladders                                                                                                                           |
 
 ---
 
@@ -1643,5 +1736,5 @@ any interview, across almost every problem above:
 
 This is exactly the kind of design reasoning senior engineers are expected to
 demonstrate in LLD and system-design interviews — and the fastest way to sound
-fluent is to always answer *"why this pattern"* with *"because it removes this
-specific pain,"* not just *"because it's a known pattern."*
+fluent is to always answer _"why this pattern"_ with _"because it removes this
+specific pain,"_ not just _"because it's a known pattern."_
